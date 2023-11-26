@@ -1,3 +1,12 @@
+# This is a fork of the below.
+I am going to try to create a 'restic' volume driver that restores a restic volume on publish and backs it up on unpublish...
+I'm not looking to add the script to the volumeAttributes every time
+Anyway the rest may or may not be accurate to whatever I'm doing to the repo -- 
+The original source code is [here](https://github.com/Kamatera/shell-script-csi-driver/tree/latest).  
+
+-----README FROM ORIGINAL REPO-----
+
+
 # Simple shell-script based CSI driver
 
 This is a simple [Container Storage Interface](https://github.com/container-storage-interface/spec/blob/master/spec.md) driver which is based on mount / unmount shell scripts defined in the volume context.

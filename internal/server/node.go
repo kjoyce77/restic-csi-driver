@@ -1,13 +1,7 @@
-package driver
+package server
 
 import (
 	"context"
-	"fmt"
-	"io/ioutil"
-	"os"
-	"os/exec"
-	"path"
-	"strings"
 
 	"github.com/container-storage-interface/spec/lib/go/csi"
 	"github.com/sirupsen/logrus"
@@ -34,59 +28,26 @@ func (d *Driver) NodePublishVolume(ctx context.Context, req *csi.NodePublishVolu
 		return nil, status.Error(codes.InvalidArgument, "NodePublishVolume Target Path must be provided")
 	}
 
-	mountScript, unmountScript := "", ""
-	for key, value := range req.VolumeContext {
-		if key == "mountScript" {
-			mountScript = value
-		} else if key == "unmountScript" {
-			unmountScript = value
-		}
-	}
-	if mountScript == "" {
-		return nil, status.Error(codes.InvalidArgument, "NodePublishVolume mountScript must be provided")
-	}
-	if unmountScript == "" {
-		return nil, status.Error(codes.InvalidArgument, "NodePublishVolume unmountScript must be provided")
-	}
-
 	log := d.log.WithFields(logrus.Fields{
-		"volume_id":           req.VolumeId,
-		"target_path":         req.TargetPath,
-		"method":              "node_publish_volume",
+		"volume_id":   req.VolumeId,
+		"target_path": req.TargetPath,
+		"method":      "node_publish_volume",
 	})
 	log.WithField("req", req).Info("node publish volume called")
 
-	err := ioutil.WriteFile(path.Join(d.workdir, req.VolumeId + ".unmount"), []byte(unmountScript), 0644)
-	if err != nil {
-		return nil, status.Error(codes.Unknown, err.Error())
-	}
+	log.Printf(d.config.ResticRepo[0].Repository)
+	// out, err := exec.Command(mountCmd, mountArgs...).CombinedOutput()
+	// if err != nil {
+	// 	return nil, status.Error(
+	// 		codes.Unknown,
+	// 		fmt.Sprintf(
+	// 			"mounting failed: %v cmd: '%s %s' output: %q",
+	// 			err, mountCmd, strings.Join(mountArgs, " "), string(out),
+	// 		),
+	// 	)
+	// }
 
-	// create target, os.Mkdirall is noop if directory exists
-	err = os.MkdirAll(req.TargetPath, 0750)
-	if err != nil {
-		return nil, status.Error(codes.Unknown, err.Error())
-	}
-
-	mountCmd := "sh"
-	mountArgs := []string{"-c", "export TARGET_PATH=\"" + req.TargetPath + "\"\nexport VOLUME_ID=\"" + req.VolumeId + "\"\n" + mountScript}
-
-	log.WithFields(logrus.Fields{
-		"cmd":  mountCmd,
-		"args": mountArgs,
-	}).Info("executing mount command")
-
-	out, err := exec.Command(mountCmd, mountArgs...).CombinedOutput()
-	if err != nil {
-		return nil, status.Error(
-			codes.Unknown,
-			fmt.Sprintf(
-				"mounting failed: %v cmd: '%s %s' output: %q",
-				err, mountCmd, strings.Join(mountArgs, " "), string(out),
-			),
-		)
-	}
-
-	log.WithField("out", string(out)).Info("bind mounting the volume is finished")
+	// log.WithField("out", string(out)).Info("bind mounting the volume is finished")
 	return &csi.NodePublishVolumeResponse{}, nil
 }
 
@@ -107,33 +68,7 @@ func (d *Driver) NodeUnpublishVolume(ctx context.Context, req *csi.NodeUnpublish
 	})
 	log.WithField("req", req).Info("node unpublish volume called")
 
-	file, err := os.Open(path.Join(d.workdir, req.VolumeId + ".unmount"))
-	if err != nil {
-		return nil, status.Error(codes.Unknown, err.Error())
-	}
-
-	defer file.Close()
-	respBytes, err := ioutil.ReadAll(file)
-	if err != nil {
-		return nil, status.Error(codes.Unknown, err.Error())
-	}
-	unmountScript := string(respBytes)
-
-	unmountCmd := "sh"
-	unmountArgs := []string{"-c", "export TARGET_PATH=\"" + req.TargetPath + "\"\nexport VOLUME_ID=\"" + req.VolumeId + "\"\n" + unmountScript}
-
-	out, err := exec.Command(unmountCmd, unmountArgs...).CombinedOutput()
-	if err != nil {
-		return nil, status.Error(
-			codes.Unknown,
-			fmt.Sprintf(
-				"mounting failed: %v cmd: '%s %s' output: %q",
-				err, unmountCmd, strings.Join(unmountArgs, " "), string(out),
-			),
-		)
-	}
-
-	log.WithField("out", string(out)).Info("unmounting volume is finished")
+	// log.WithField("out", string(out)).Info("unmounting volume is finished")
 	return &csi.NodeUnpublishVolumeResponse{}, nil
 }
 
@@ -155,7 +90,7 @@ func (d *Driver) NodeGetCapabilities(ctx context.Context, req *csi.NodeGetCapabi
 func (d *Driver) NodeGetInfo(ctx context.Context, req *csi.NodeGetInfoRequest) (*csi.NodeGetInfoResponse, error) {
 	d.log.WithField("method", "node_get_info").Info("node get info called")
 	return &csi.NodeGetInfoResponse{
-		NodeId:            d.hostID,
+		NodeId: d.hostID,
 	}, nil
 }
 

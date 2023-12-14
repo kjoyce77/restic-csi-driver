@@ -1,25 +1,27 @@
-package driver
+package server
 
 import (
 	"context"
 	"fmt"
+	"net"
+	"net/url"
+	"nodeto/restic-csi-plugin/config"
+	"os"
+	"path"
+	"path/filepath"
+	"sync"
+
 	"github.com/container-storage-interface/spec/lib/go/csi"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
-	"net"
-	"net/url"
-	"os"
-	"path"
-	"path/filepath"
-	"sync"
 )
 
 const (
 	// DefaultDriverName defines the name that is used in Kubernetes and the CSI
 	// system for the canonical, official name of this plugin
-	DefaultDriverName        = "shbs.csi.kamatera.com"
+	DefaultDriverName = "restic.csi.nodeto.com"
 )
 
 var (
@@ -30,24 +32,20 @@ var (
 
 // Driver implements the following CSI interfaces:
 //
-//   csi.IdentityServer
-//   csi.NodeServer
-//
+//	csi.IdentityServer
+//	csi.NodeServer
 type Driver struct {
 	name string
 	// publishInfoVolumeName is used to pass the volume name from
 	// `ControllerPublishVolume` to `NodeStageVolume or `NodePublishVolume`
 	publishInfoVolumeName string
 
-	endpoint          string
-	hostID            string
-	//region            string
-	//doTag             string
-	//waitActionTimeout time.Duration
+	endpoint string
+	hostID   string
 
-	srv     *grpc.Server
-	log     *logrus.Entry
-	workdir string
+	srv *grpc.Server
+	log *logrus.Entry
+	config *config.Config
 
 	// ready defines whether the driver is ready to function. This value will
 	// be used by the `Identity` service via the `Probe()` method.
@@ -67,7 +65,7 @@ func GetTreeState() string {
 	return gitTreeState
 }
 
-func NewDriver(ep string, driverName string, workdir string, nodeId string) (*Driver, error) {
+func NewDriver(ep string, driverName string, nodeId string, cfg *config.Config) (*Driver, error) {
 	if driverName == "" {
 		driverName = DefaultDriverName
 	}
@@ -83,11 +81,11 @@ func NewDriver(ep string, driverName string, workdir string, nodeId string) (*Dr
 	return &Driver{
 		name:                  driverName,
 		publishInfoVolumeName: driverName + "/volume-name",
-		hostID: nodeId,
+		hostID:                nodeId,
 
-		endpoint:  ep,
-		log:       log,
-		workdir: workdir,
+		endpoint: ep,
+		log:      log,
+		config:   cfg,
 	}, nil
 }
 

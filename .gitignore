@@ -1,3 +1,7 @@
 shell-script-csi-driver
 .csi.sock
 .workdir
+.targetPath
+.envrc
+secrets.toml
+config.toml

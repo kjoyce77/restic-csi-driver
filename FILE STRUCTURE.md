@@ -17,6 +17,8 @@ Organizing the files for your CSI plugin project is crucial for maintainability 
    b. **`/internal/lvm`**
       - LVM-related functionalities (like volume creation and management).
       - Example files: `volume_manager.go`, `utils.go`.
+      - ** and mount **
+      - ** and snapshot **
 
    c. **`/internal/restic`**
       - Restic backup and restore logic.

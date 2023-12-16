@@ -36,7 +36,7 @@ func (d *Driver) NodePublishVolume(ctx context.Context, req *csi.NodePublishVolu
 	log.WithField("req", req).Info("node publish volume called")
 
 	log.Printf(d.config.ResticRepo[0].Repository)
-	// out, err := exec.Command(mountCmd, mountArgs...).CombinedOutput()
+	// out, err := exec.Command(mountCmd, mountArgs...).Output()
 	// if err != nil {
 	// 	return nil, status.Error(
 	// 		codes.Unknown,
